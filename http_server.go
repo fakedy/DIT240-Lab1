@@ -1,8 +1,11 @@
 package main
-import("fmt")
-import("net")
 
-
+import (
+	"fmt"
+)
+import (
+	"net"
+)
 
 func main() {
 	fmt.Println("Hello World!")
@@ -12,7 +15,7 @@ func main() {
 
 	listener, err := net.Listen("tcp", ":8080")
 
-	if(err != nil){	// err will not be nil if there is an error
+	if err != nil { // err will not be nil if there is an error
 		fmt.Println("Failed to create listener")
 	} else {
 		addr := listener.Addr()
@@ -20,19 +23,23 @@ func main() {
 	}
 
 	// continiously check for connections
-	for{
+	for {
 		connection, err := listener.Accept()
-		if(err != nil){
+		if err != nil {
 			fmt.Println("Failed to accept connection")
 		} else {
 			fmt.Printf("Connection established with: %s\n", connection.RemoteAddr())
 		}
 
 		// temporary
-		connection.Close()
+		go handleConn(connection)
 
 	}
 
 	listener.Close()
+
+}
+
+func handleConn(conn net.Conn) {
 
 }
