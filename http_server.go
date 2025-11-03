@@ -1,10 +1,10 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
-)
-import (
 	"net"
+	"net/http"
 )
 
 func main() {
@@ -41,5 +41,18 @@ func main() {
 }
 
 func handleConn(conn net.Conn) {
+
+	tmp := make([]byte, 256)
+	conn.Read(tmp)
+
+	r := bufio.NewReader(conn)
+	request, err := http.ReadRequest(r)
+	fmt.Printf("fail:%s\n", request.Method)
+	if err != nil {
+		fmt.Println("uh oh")
+	} else if request.Method == "GET" {
+		fmt.Printf("its the nutshack")
+
+	}
 
 }
