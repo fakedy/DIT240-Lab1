@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
 )
 
@@ -79,13 +80,30 @@ func handleConn(conn net.Conn) {
 			contentType = "image/jpeg"
 		case ".css":
 			contentType = "text/css"
+		default:
+			conn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
+			<-connectionLimit
+			return
 		}
 
-		response += fmt.Sprintf("Content-Type: %s", contentType)
+		data, err := os.ReadFile(file)
+		if err != nil {
+			conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+			response = "HTTP/1.1 404 Not Found\r\n"
+			fmt.Println(response)
+			<-connectionLimit
+			return
+		}
+
+		response += fmt.Sprintf("Content-Type: %s\r\nContent-Lengt: %s", contentType, data)
 		fmt.Println(response)
 
 	case "POST":
 
+	default:
+		conn.Write([]byte("HTTP/1.1 501 Not Implemented\r\n\r\n"))
+		<-connectionLimit
+		return
 	}
 
 	conn.Write([]byte(response))
