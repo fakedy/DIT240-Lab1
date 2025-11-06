@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"path/filepath"
 )
 
 // creates a buffered channel
@@ -58,22 +59,36 @@ func handleConn(conn net.Conn) {
 	}
 
 	fmt.Printf("method:%s\n", request.Method)
+	var response = "HTTP/1.1 400 Bad Request\r\n"
+
 	switch request.Method {
 	case "GET":
 		file := request.URL.Path
-		fmt.Println(file)
+		response = "HTTP/1.1 200 OK\r\n"
+		filetype := filepath.Ext(file)
 
-		response := "HTTP/1.1 200 OK\r\n"
+		contentType := ""
+		switch filetype {
+		case ".html":
+			contentType = "text/html"
+		case ".txt":
+			contentType = "text/plain"
+		case ".gif":
+			contentType = "text/plain"
+		case ".jpeg", ".jpg":
+			contentType = "image/jpeg"
+		case ".css":
+			contentType = "text/css"
+		}
 
-		conn.Write([]byte(response))
+		response += fmt.Sprintf("Content-Type: %s", contentType)
+		fmt.Println(response)
 
 	case "POST":
-		fmt.Println("its the nutshack")
-	default:
-		response := "HTTP/1.1 400 OK\r\n"
-		conn.Write([]byte(response))
+
 	}
 
+	conn.Write([]byte(response))
 	<-connectionLimit // remove from channel
 
 }
