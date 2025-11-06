@@ -36,7 +36,7 @@ func main() {
 		}
 
 		// if the channel is full it will block right here
-		connectionLimit <- struct{}{} // sends struct{}{} to the buffer
+		connectionLimit <- struct{}{} // sends struct{}{} to the buffer (0 memory)
 
 		// temporary
 		go handleConn(connection)
@@ -53,6 +53,7 @@ func handleConn(conn net.Conn) {
 
 	if err != nil {
 		fmt.Println(err)
+		<-connectionLimit // remove from channel
 		return
 	}
 
@@ -65,6 +66,6 @@ func handleConn(conn net.Conn) {
 		fmt.Println("its the nutshack")
 	}
 
-	<-connectionLimit
+	<-connectionLimit // remove from channel
 
 }
