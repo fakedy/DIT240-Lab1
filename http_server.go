@@ -96,7 +96,7 @@ func handleConn(conn net.Conn) {
 			return
 		}
 
-		response += fmt.Sprintf("Content-Type: %s\r\nContent-Lengt: %d", contentType, len(data))
+		response += fmt.Sprintf("Content-Type: %s\r\nContent-Length: %d", contentType, len(data))
 		fmt.Println(response)
 
 	case "POST":
