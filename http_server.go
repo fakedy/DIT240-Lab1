@@ -86,7 +86,8 @@ func handleConn(conn net.Conn) {
 			return
 		}
 
-		data, err := os.ReadFile(file)
+		relativePath := file[1:]
+		data, err := os.ReadFile(relativePath)
 		if err != nil {
 			conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 			response = "HTTP/1.1 404 Not Found\r\n"
@@ -95,8 +96,8 @@ func handleConn(conn net.Conn) {
 			return
 		}
 
-		response += fmt.Sprintf("Content-Type: %s\r\nContent-Lengt: %s", contentType, data)
-		fmt.Println(response)
+		response += fmt.Sprintf("Content-Type: %s\r\nContent-Length: %d\r\n", contentType, len(data))
+		response += fmt.Sprintf("\r\n%s", data)
 
 	case "POST":
 
