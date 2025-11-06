@@ -30,9 +30,9 @@ func main() {
 		connection, err := listener.Accept()
 		if err != nil {
 			fmt.Println("Failed to accept connection")
+			continue // should do a new loop iteration
 		} else {
 			fmt.Printf("Connection established with: %s\n", connection.RemoteAddr())
-			continue // should do a new loop iteration
 		}
 
 		// if the channel is full it will block right here
@@ -62,8 +62,16 @@ func handleConn(conn net.Conn) {
 	case "GET":
 		file := request.URL.Path
 		fmt.Println(file)
+
+		response := "HTTP/1.1 200 OK\r\n"
+
+		conn.Write([]byte(response))
+
 	case "POST":
 		fmt.Println("its the nutshack")
+	default:
+		response := "HTTP/1.1 400 OK\r\n"
+		conn.Write([]byte(response))
 	}
 
 	<-connectionLimit // remove from channel
