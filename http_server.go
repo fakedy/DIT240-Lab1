@@ -31,28 +31,30 @@ func main() {
 			fmt.Printf("Connection established with: %s\n", connection.RemoteAddr())
 		}
 
-		// temporary
 		go handleConn(connection)
 
 	}
 
-	listener.Close()
-
 }
 
 func handleConn(conn net.Conn) {
-
-	tmp := make([]byte, 256)
-	conn.Read(tmp)
+	defer conn.Close()
 
 	r := bufio.NewReader(conn)
 	request, err := http.ReadRequest(r)
-	fmt.Printf("fail:%s\n", request.Method)
-	if err != nil {
-		fmt.Println("uh oh")
-	} else if request.Method == "GET" {
-		fmt.Printf("its the nutshack")
 
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Printf("method:%s\n", request.Method)
+	switch request.Method {
+	case "GET":
+		file := request.URL.Path
+		fmt.Println(file)
+	case "POST":
+		fmt.Println("its the nutshack")
 	}
 
 }
