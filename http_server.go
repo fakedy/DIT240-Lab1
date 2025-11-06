@@ -43,8 +43,6 @@ func main() {
 
 	}
 
-	listener.Close()
-
 }
 
 func handleConn(conn net.Conn) {
@@ -52,14 +50,19 @@ func handleConn(conn net.Conn) {
 
 	r := bufio.NewReader(conn)
 	request, err := http.ReadRequest(r)
+
 	if err != nil {
-		fmt.Println("uh oh")
+		fmt.Println(err)
 		return
-	} else if request.Method == "GET" {
-		fmt.Printf("URL Requested: %s\n", request.URL.Path)
+	}
 
-		// respond
-
+	fmt.Printf("method:%s\n", request.Method)
+	switch request.Method {
+	case "GET":
+		file := request.URL.Path
+		fmt.Println(file)
+	case "POST":
+		fmt.Println("its the nutshack")
 	}
 
 	<-connectionLimit
