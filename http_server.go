@@ -7,6 +7,9 @@ import (
 	"net/http"
 )
 
+// creates a buffered channel
+var connectionLimit = make(chan struct{}, 10) // channel of structs
+
 func main() {
 	fmt.Println("Hello World!")
 
@@ -29,7 +32,11 @@ func main() {
 			fmt.Println("Failed to accept connection")
 		} else {
 			fmt.Printf("Connection established with: %s\n", connection.RemoteAddr())
+			continue // should do a new loop iteration
 		}
+
+		// if the channel is full it will block right here
+		connectionLimit <- struct{}{} // sends struct{}{} to the buffer
 
 		// temporary
 		go handleConn(connection)
@@ -41,18 +48,20 @@ func main() {
 }
 
 func handleConn(conn net.Conn) {
-
-	tmp := make([]byte, 256)
-	conn.Read(tmp)
+	defer conn.Close()
 
 	r := bufio.NewReader(conn)
 	request, err := http.ReadRequest(r)
-	fmt.Printf("fail:%s\n", request.Method)
 	if err != nil {
 		fmt.Println("uh oh")
+		return
 	} else if request.Method == "GET" {
-		fmt.Printf("its the nutshack")
+		fmt.Printf("URL Requested: %s\n", request.URL.Path)
+
+		// respond
 
 	}
+
+	<-connectionLimit
 
 }
