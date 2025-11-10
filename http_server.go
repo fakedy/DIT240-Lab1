@@ -53,28 +53,38 @@ func main() {
 }
 
 func handleConn(conn net.Conn) {
+	//close conn when we are done
 	defer conn.Close()
 
+	//read conn
 	r := bufio.NewReader(conn)
+	//get request from conn
 	request, err := http.ReadRequest(r)
 
+	//if request is bad then close the conn
 	if err != nil {
 		fmt.Println(err)
 		<-connectionLimit // remove from channel
 		return
 	}
 
+	//identify the http request method
 	fmt.Printf("method:%s\n", request.Method)
+	//default response to request
 	var response = "HTTP/1.1 400 Bad Request\r\n"
 
 	switch request.Method {
 	case "GET":
+		//get the file path
 		file := request.URL.Path
+		//temporary default response to GET request
 		response = "HTTP/1.1 200 OK\r\n"
 		filetype := filepath.Ext(file)
 
+		//get the content type from the path
 		contentType := ""
 		switch filetype {
+		//determine content type from file extension otherwise respond with 400
 		case ".html":
 			contentType = "text/html"
 		case ".txt":
@@ -91,6 +101,7 @@ func handleConn(conn net.Conn) {
 			return
 		}
 
+		//check if file exists on server if not respond with 404
 		relativePath := file[1:]
 		data, err := os.ReadFile(relativePath)
 		if err != nil {
@@ -101,25 +112,31 @@ func handleConn(conn net.Conn) {
 			return
 		}
 
+		//add information to response
 		response += fmt.Sprintf("Content-Type: %s\r\nContent-Length: %d\r\n", contentType, len(data))
 		response += fmt.Sprintf("\r\n%s", data)
 
 	case "POST":
+		// get path from post request
 		file := request.URL.Path
+		// remove the / in the beginning of the path
 		relativePath := file[1:]
 
+		//check if file created has a valid file extension
 		if !validType(relativePath) {
 			conn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
 			<-connectionLimit
 			return
 		}
-		fmt.Printf("path: %s", relativePath)
+
+		//create file in directory according to path
+		data, err := os.Create(relativePath)
 		if err != nil {
 			conn.Write([]byte("HTTP/1.1 500 Internal Server Error\r\n"))
 			<-connectionLimit
 			return
 		}
-		data, err := os.Create(relativePath)
+		//copy contents of POST body into the newly created file
 		_, err = io.Copy(data, request.Body)
 		if err != nil {
 			conn.Write([]byte("HTTP/1.1 500 Internal Server Error\r\n"))
@@ -128,17 +145,20 @@ func handleConn(conn net.Conn) {
 		}
 		defer data.Close()
 
+	//respond with 501 for every http method that isn't GET and POST
 	default:
 		conn.Write([]byte("HTTP/1.1 501 Not Implemented\r\n\r\n"))
 		<-connectionLimit
 		return
 	}
 
+	//write the response to the connection
 	conn.Write([]byte(response))
 	<-connectionLimit // remove from channel
 
 }
 
+// check for valid file extensions (used in POST)
 func validType(file string) bool {
 	filetype := filepath.Ext(file)
 
