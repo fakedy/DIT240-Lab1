@@ -90,6 +90,8 @@ func handleConn(conn net.Conn) {
 			return
 		}
 
+		fmt.Println(contentType)
+
 		relativePath := file[1:]
 
 		conn, err := net.Dial("tcp", "localhost:8080")
@@ -102,8 +104,7 @@ func handleConn(conn net.Conn) {
 			return
 		}
 
-		fmt.Fprintf(conn, "GET"+relativePath+"HTTP/1.0\r\n\r\n")
-
+		fmt.Fprintf(conn, "GET "+relativePath+" HTTP/1.0\r\n\r\n")
 		//response += fmt.Sprintf("Content-Type: %s\r\nContent-Length: %d\r\n", contentType, len(data))
 		//response += fmt.Sprintf("\r\n%s", data)
 
