@@ -13,12 +13,16 @@ import (
 var connectionLimit = make(chan struct{}, 10) // channel of structs
 
 func main() {
-	fmt.Println("Hello World!")
+	//take command line arguments as port
+	if len(os.Args) != 2 {
+		fmt.Println("Usage:./http_server <port>")
+	}
+	port := os.Args[1]
 
 	// Create listener
 	// Go support multiple return falues thus the following is valid
 
-	listener, err := net.Listen("tcp", ":8080")
+	listener, err := net.Listen("tcp", port)
 
 	if err != nil { // err will not be nil if there is an error
 		fmt.Println("Failed to create listener")
