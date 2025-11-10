@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -105,14 +106,21 @@ func handleConn(conn net.Conn) {
 
 	case "POST":
 		file := request.URL.Path
+		relativePath := file[1:]
 
-		if !validType(file) {
+		if !validType(relativePath) {
 			conn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
 			<-connectionLimit
 			return
 		}
-
-		data, err := os.Create(file)
+		fmt.Printf("path: %s", relativePath)
+		if err != nil {
+			conn.Write([]byte("HTTP/1.1 500 Internal Server Error\r\n"))
+			<-connectionLimit
+			return
+		}
+		data, err := os.Create(relativePath)
+		_, err = io.Copy(data, request.Body)
 		if err != nil {
 			conn.Write([]byte("HTTP/1.1 500 Internal Server Error\r\n"))
 			<-connectionLimit
