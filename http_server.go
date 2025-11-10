@@ -22,7 +22,7 @@ func main() {
 	// Create listener
 	// Go support multiple return falues thus the following is valid
 
-	listener, err := net.Listen("tcp", port)
+	listener, err := net.Listen("tcp", ":"+port)
 
 	if err != nil { // err will not be nil if there is an error
 		fmt.Println("Failed to create listener")
@@ -104,6 +104,21 @@ func handleConn(conn net.Conn) {
 		response += fmt.Sprintf("\r\n%s", data)
 
 	case "POST":
+		file := request.URL.Path
+
+		if !validType(file) {
+			conn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
+			<-connectionLimit
+			return
+		}
+
+		data, err := os.Create(file)
+		if err != nil {
+			conn.Write([]byte("HTTP/1.1 500 Internal Server Error\r\n"))
+			<-connectionLimit
+			return
+		}
+		defer data.Close()
 
 	default:
 		conn.Write([]byte("HTTP/1.1 501 Not Implemented\r\n\r\n"))
@@ -114,4 +129,23 @@ func handleConn(conn net.Conn) {
 	conn.Write([]byte(response))
 	<-connectionLimit // remove from channel
 
+}
+
+func validType(file string) bool {
+	filetype := filepath.Ext(file)
+
+	switch filetype {
+	case ".html":
+		return true
+	case ".txt":
+		return true
+	case ".gif":
+		return true
+	case ".jpeg", ".jpg":
+		return true
+	case ".css":
+		return true
+	default:
+		return false
+	}
 }
