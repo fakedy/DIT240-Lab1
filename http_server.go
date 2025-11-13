@@ -55,7 +55,6 @@ func main() {
 func handleConn(conn net.Conn) {
 	//close conn when we are done
 	defer conn.Close()
-
 	//read conn
 	r := bufio.NewReader(conn)
 	//get request from conn
@@ -82,20 +81,8 @@ func handleConn(conn net.Conn) {
 		filetype := filepath.Ext(file)
 
 		//get the content type from the path
-		contentType := ""
-		switch filetype {
-		//determine content type from file extension otherwise respond with 400
-		case ".html":
-			contentType = "text/html"
-		case ".txt":
-			contentType = "text/plain"
-		case ".gif":
-			contentType = "text/plain"
-		case ".jpeg", ".jpg":
-			contentType = "image/jpeg"
-		case ".css":
-			contentType = "text/css"
-		default:
+		validType, contentType := validType(filetype)
+		if !validType {
 			conn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
 			<-connectionLimit
 			return
@@ -123,7 +110,8 @@ func handleConn(conn net.Conn) {
 		relativePath := file[1:]
 
 		//check if file created has a valid file extension
-		if !validType(relativePath) {
+		validFiletype, _ := validType(relativePath)
+		if !validFiletype {
 			conn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
 			<-connectionLimit
 			return
@@ -159,21 +147,21 @@ func handleConn(conn net.Conn) {
 }
 
 // check for valid file extensions (used in POST)
-func validType(file string) bool {
+func validType(file string) (bool, string) {
 	filetype := filepath.Ext(file)
 
 	switch filetype {
 	case ".html":
-		return true
+		return true, "text/html"
 	case ".txt":
-		return true
+		return true, "text/plain"
 	case ".gif":
-		return true
+		return true, "text/plain"
 	case ".jpeg", ".jpg":
-		return true
+		return true, "image/jpeg"
 	case ".css":
-		return true
+		return true, "text/css"
 	default:
-		return false
+		return false, ""
 	}
 }

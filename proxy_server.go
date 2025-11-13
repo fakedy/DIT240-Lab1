@@ -22,7 +22,7 @@ func main() {
 	// Create listener
 	// Go support multiple return falues thus the following is valid
 
-	listener, err := net.Listen("tcp", port)
+	listener, err := net.Listen("tcp", ":"+port)
 
 	if err != nil { // err will not be nil if there is an error
 		fmt.Println("Failed to create listener")
@@ -51,10 +51,9 @@ func main() {
 
 }
 
-func handleConn(conn net.Conn) {
-	defer conn.Close()
-
-	r := bufio.NewReader(conn)
+func handleConn(clientConn net.Conn) {
+	defer clientConn.Close()
+	r := bufio.NewReader(clientConn)
 	request, err := http.ReadRequest(r)
 
 	if err != nil {
@@ -64,59 +63,56 @@ func handleConn(conn net.Conn) {
 	}
 
 	fmt.Printf("method:%s\n", request.Method)
-	var response = "HTTP/1.1 400 Bad Request\r\n"
 
 	switch request.Method {
 	case "GET":
 		file := request.URL.Path
-		response = "HTTP/1.1 200 OK\r\n"
 		filetype := filepath.Ext(file)
 
-		contentType := ""
+		// useless atm except for checking if its valid filetype
 		switch filetype {
 		case ".html":
-			contentType = "text/html"
 		case ".txt":
-			contentType = "text/plain"
 		case ".gif":
-			contentType = "text/plain"
 		case ".jpeg", ".jpg":
-			contentType = "image/jpeg"
 		case ".css":
-			contentType = "text/css"
 		default:
-			conn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
+			clientConn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
 			<-connectionLimit
 			return
 		}
-
-		fmt.Println(contentType)
 
 		relativePath := file[1:]
 
-		conn, err := net.Dial("tcp", "localhost:8080")
+		// connects to the actual webserver
+		webserverConn, err := net.Dial("tcp", "localhost:8080")
 
+		// if we fail to dial webserver
 		if err != nil {
-			conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
-			response = "HTTP/1.1 404 Not Found\r\n"
-			fmt.Println(response)
+			// return response to the client (not the webserver)
+			clientConn.Write([]byte("HTTP/1.1 502 Bad Gateway\r\n\r\n"))
 			<-connectionLimit
 			return
 		}
 
-		fmt.Fprintf(conn, "GET "+relativePath+" HTTP/1.0\r\n\r\n")
-		//response += fmt.Sprintf("Content-Type: %s\r\nContent-Length: %d\r\n", contentType, len(data))
-		//response += fmt.Sprintf("\r\n%s", data)
+		// ask webserver for this page
+		query := fmt.Sprintf("GET %s HTTP/1.1\r\n\r\n", relativePath)
+		webserverConn.Write([]byte(query))
 
-	case "POST":
+		// read what webserver return
+		response := ""
+		webserverConn.Read([]byte(response))
 
-	default:
-		conn.Write([]byte("HTTP/1.1 501 Not Implemented\r\n\r\n"))
+		// response should contain the webserver data
+		fmt.Println(response)
+		clientConn.Write([]byte(response))
+
+	default: // if its not a GET request
+		clientConn.Write([]byte("HTTP/1.1 501 Not Implemented\r\n\r\n"))
 		<-connectionLimit
 		return
 	}
 
-	conn.Write([]byte(response))
 	<-connectionLimit // remove from channel
 
 }
