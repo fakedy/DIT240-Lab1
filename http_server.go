@@ -76,6 +76,8 @@ func handleConn(conn net.Conn) {
 	case "GET":
 		//get the file path
 		file := request.URL.Path
+
+		fmt.Printf("Requested URL: %s\n", file)
 		//temporary default response to GET request
 		response = "HTTP/1.1 200 OK\r\n"
 		filetype := filepath.Ext(file)
@@ -146,7 +148,7 @@ func handleConn(conn net.Conn) {
 
 }
 
-// check for valid file extensions (used in POST)
+// check for valid file extensions and return the content-type
 func validType(file string) (bool, string) {
 	filetype := filepath.Ext(file)
 

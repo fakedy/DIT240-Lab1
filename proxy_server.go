@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -82,8 +83,6 @@ func handleConn(clientConn net.Conn) {
 			return
 		}
 
-		relativePath := file[1:]
-
 		// connects to the actual webserver
 		webserverConn, err := net.Dial("tcp", "localhost:8080")
 
@@ -96,16 +95,10 @@ func handleConn(clientConn net.Conn) {
 		}
 
 		// ask webserver for this page
-		query := fmt.Sprintf("GET %s HTTP/1.1\r\n\r\n", relativePath)
+		query := fmt.Sprintf("GET %s HTTP/1.1\r\n\r\n", file)
 		webserverConn.Write([]byte(query))
 
-		// read what webserver return
-		response := ""
-		webserverConn.Read([]byte(response))
-
-		// response should contain the webserver data
-		fmt.Println(response)
-		clientConn.Write([]byte(response))
+		io.Copy(clientConn, webserverConn)
 
 	default: // if its not a GET request
 		clientConn.Write([]byte("HTTP/1.1 501 Not Implemented\r\n\r\n"))
