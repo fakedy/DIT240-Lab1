@@ -54,7 +54,7 @@ func main() {
 }
 
 func handleConn(conn net.Conn) {
-	//close conn when we are done
+	//close conn when we are done and remove the conncection from the chan struct
 	defer conn.Close()
 	defer func() { <-connectionLimit }()
 	//read conn
