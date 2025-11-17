@@ -17,6 +17,7 @@ func main() {
 	//take command line arguments as port
 	if len(os.Args) != 2 {
 		fmt.Println("Usage:./http_server <port>")
+		os.Exit(1)
 	}
 	port := os.Args[1]
 
@@ -54,12 +55,12 @@ func main() {
 
 func handleConn(clientConn net.Conn) {
 	defer clientConn.Close()
+	defer func() { <-connectionLimit }()
 	r := bufio.NewReader(clientConn)
 	request, err := http.ReadRequest(r)
 
 	if err != nil {
 		fmt.Println(err)
-		<-connectionLimit // remove from channel
 		return
 	}
 
@@ -79,7 +80,6 @@ func handleConn(clientConn net.Conn) {
 		case ".css":
 		default:
 			clientConn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
-			<-connectionLimit
 			return
 		}
 
@@ -90,7 +90,6 @@ func handleConn(clientConn net.Conn) {
 		if err != nil {
 			// return response to the client (not the webserver)
 			clientConn.Write([]byte("HTTP/1.1 502 Bad Gateway\r\n\r\n"))
-			<-connectionLimit
 			return
 		}
 
@@ -102,10 +101,7 @@ func handleConn(clientConn net.Conn) {
 
 	default: // if its not a GET request
 		clientConn.Write([]byte("HTTP/1.1 501 Not Implemented\r\n\r\n"))
-		<-connectionLimit
 		return
 	}
-
-	<-connectionLimit // remove from channel
 
 }
