@@ -133,6 +133,8 @@ func handleConn(conn net.Conn) {
 			<-connectionLimit
 			return
 		}
+
+		response = "HTTP/1.1 200 OK\r\n\r\n"
 		defer data.Close()
 
 	//respond with 501 for every http method that isn't GET and POST
@@ -158,7 +160,7 @@ func validType(file string) (bool, string) {
 	case ".txt":
 		return true, "text/plain"
 	case ".gif":
-		return true, "text/plain"
+		return true, "image/gif"
 	case ".jpeg", ".jpg":
 		return true, "image/jpeg"
 	case ".css":
