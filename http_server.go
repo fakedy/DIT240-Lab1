@@ -81,7 +81,6 @@ func handleConn(conn net.Conn) {
 
 		fmt.Printf("Requested URL: %s\n", file)
 		//temporary default response to GET request
-		response = "HTTP/1.1 200 OK\r\n"
 		filetype := filepath.Ext(file)
 
 		//get the content type from the path
@@ -102,8 +101,9 @@ func handleConn(conn net.Conn) {
 		}
 
 		//add information to response
-		response += fmt.Sprintf("Content-Type: %s\r\nContent-Length: %d\r\n", contentType, len(data))
-		response += fmt.Sprintf("\r\n%s", data)
+		response = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n", contentType, len(data))
+		conn.Write([]byte(response))
+		conn.Write(data)
 
 	case "POST":
 		// get path from post request
@@ -134,14 +134,13 @@ func handleConn(conn net.Conn) {
 		response = "HTTP/1.1 200 OK\r\n\r\n"
 		defer data.Close()
 
+		conn.Write([]byte(response))
+
 	//respond with 501 for every http method that isn't GET and POST
 	default:
 		conn.Write([]byte("HTTP/1.1 501 Not Implemented\r\n\r\n"))
 		return
 	}
-
-	//write the response to the connection
-	conn.Write([]byte(response))
 
 }
 
