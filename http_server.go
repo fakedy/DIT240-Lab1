@@ -17,6 +17,7 @@ func main() {
 	//take command line arguments as port
 	if len(os.Args) != 2 {
 		fmt.Println("Usage:./http_server <port>")
+		os.Exit(1)
 	}
 	port := os.Args[1]
 
@@ -55,6 +56,7 @@ func main() {
 func handleConn(conn net.Conn) {
 	//close conn when we are done
 	defer conn.Close()
+	defer func() { <-connectionLimit }()
 	//read conn
 	r := bufio.NewReader(conn)
 	//get request from conn
@@ -63,7 +65,7 @@ func handleConn(conn net.Conn) {
 	//if request is bad then close the conn
 	if err != nil {
 		fmt.Println(err)
-		<-connectionLimit // remove from channel
+		conn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
 		return
 	}
 
@@ -86,7 +88,6 @@ func handleConn(conn net.Conn) {
 		validType, contentType := validType(filetype)
 		if !validType {
 			conn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
-			<-connectionLimit
 			return
 		}
 
@@ -97,7 +98,6 @@ func handleConn(conn net.Conn) {
 			conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 			response = "HTTP/1.1 404 Not Found\r\n"
 			fmt.Println(response)
-			<-connectionLimit
 			return
 		}
 
@@ -115,7 +115,6 @@ func handleConn(conn net.Conn) {
 		validFiletype, _ := validType(relativePath)
 		if !validFiletype {
 			conn.Write([]byte("HTTP/1.1 400 Bad Request\r\n\r\n"))
-			<-connectionLimit
 			return
 		}
 
@@ -123,14 +122,12 @@ func handleConn(conn net.Conn) {
 		data, err := os.Create(relativePath)
 		if err != nil {
 			conn.Write([]byte("HTTP/1.1 500 Internal Server Error\r\n"))
-			<-connectionLimit
 			return
 		}
 		//copy contents of POST body into the newly created file
 		_, err = io.Copy(data, request.Body)
 		if err != nil {
 			conn.Write([]byte("HTTP/1.1 500 Internal Server Error\r\n"))
-			<-connectionLimit
 			return
 		}
 
@@ -140,13 +137,11 @@ func handleConn(conn net.Conn) {
 	//respond with 501 for every http method that isn't GET and POST
 	default:
 		conn.Write([]byte("HTTP/1.1 501 Not Implemented\r\n\r\n"))
-		<-connectionLimit
 		return
 	}
 
 	//write the response to the connection
 	conn.Write([]byte(response))
-	<-connectionLimit // remove from channel
 
 }
 
